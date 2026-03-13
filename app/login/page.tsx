@@ -2,14 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { redirectIfAuthenticated } from "@/lib/auth";
+import { signIn } from "@/app/actions/auth";
 
 export const metadata: Metadata = {
   title: "Log In",
   description: "Sign in to your Radiant Academy account.",
 };
 
-export default async function LoginPage() {
+type Props = {
+  searchParams: Promise<{ error?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: Props) {
   await redirectIfAuthenticated();
+  const { error } = await searchParams;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center px-6 py-16">
@@ -32,7 +38,13 @@ export default async function LoginPage() {
         <h1 className="text-2xl font-bold mb-1">Welcome back</h1>
         <p className="text-sm text-gray-500 mb-8">Sign in to access your course</p>
 
-        <form className="flex flex-col gap-4">
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
+        <form action={signIn} className="flex flex-col gap-4">
           <div>
             <label
               htmlFor="email"

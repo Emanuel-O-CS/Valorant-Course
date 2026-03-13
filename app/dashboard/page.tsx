@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { requireAuth } from "@/lib/auth";
 import Card from "@/components/ui/Card";
+import { signOut } from "@/app/actions/auth";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -46,7 +47,7 @@ export default async function DashboardPage() {
             <span className="hidden sm:block text-sm text-gray-500">
               {user.email}
             </span>
-            <form action="/auth/signout" method="post">
+            <form action={signOut}>
               <button
                 type="submit"
                 className="text-sm text-gray-500 hover:text-white transition-colors"
