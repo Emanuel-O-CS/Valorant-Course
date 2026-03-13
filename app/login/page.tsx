@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { redirectIfAuthenticated } from "@/lib/auth";
 import { signIn } from "@/app/actions/auth";
+import AuthForm from "@/components/auth/AuthForm";
 
 export const metadata: Metadata = {
   title: "Log In",
@@ -38,64 +39,7 @@ export default async function LoginPage({ searchParams }: Props) {
         <h1 className="text-2xl font-bold mb-1">Welcome back</h1>
         <p className="text-sm text-gray-500 mb-8">Sign in to access your course</p>
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        <form action={signIn} className="flex flex-col gap-4">
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-300 mb-1.5"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              name="email"
-              autoComplete="email"
-              required
-              placeholder="you@example.com"
-              className="w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-[#FF4655] focus:outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-300"
-              >
-                Password
-              </label>
-              <Link
-                href="/forgot-password"
-                className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <input
-              id="password"
-              type="password"
-              name="password"
-              autoComplete="current-password"
-              required
-              placeholder="••••••••"
-              className="w-full rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] px-4 py-2.5 text-sm text-white placeholder-gray-600 focus:border-[#FF4655] focus:outline-none transition-colors"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="mt-2 w-full rounded-full bg-[#FF4655] hover:bg-[#cc3544] py-2.5 text-sm font-semibold text-white transition-colors"
-          >
-            Sign In
-          </button>
-        </form>
+        <AuthForm type="login" action={signIn} error={error} />
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Don&apos;t have an account?{" "}
