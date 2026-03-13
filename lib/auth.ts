@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
  * Use in Server Components.
  */
 export async function getUser() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();

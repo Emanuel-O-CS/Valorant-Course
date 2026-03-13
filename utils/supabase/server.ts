@@ -1,33 +1,31 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
 
-export function createClient() {
-  const cookieStore = cookies();
+/**
+ * Server-side Supabase client for use in Server Components,
+ * Server Actions, and Route Handlers.
+ *
+ * Must be awaited — cookies() is async in Next.js 15+.
+ */
+export async function createClient() {
+  const cookieStore = await cookies();
 
   return createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
       getAll() {
-        // Newer Next versions
-        if (typeof (cookieStore as any).getAll === "function") {
-          return (cookieStore as any).getAll();
-        }
-
-        // Older Next versions: no getAll available
-        // Supabase can't read cookies properly without getAll.
-        // Returning [] prevents crash, but auth/session won't work reliably.
-        return [];
+        return cookieStore.getAll();
       },
-
-      setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+      setAll(cookiesToSet) {
         try {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            (cookieStore as any).set?.(name, value, options);
-          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
         } catch {
-          // Server Component: cookies may be readonly; ignore
+          // Called from a Server Component — cookie writes are ignored.
+          // Session refresh is handled by middleware instead.
         }
       },
     },

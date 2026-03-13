@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/utils/supabase/middleware";
+import { createServerClient } from "@supabase/ssr";
 
 const PROTECTED_ROUTES = ["/dashboard"];
 const AUTH_ROUTES = ["/login", "/signup"];
@@ -7,18 +7,20 @@ const AUTH_ROUTES = ["/login", "/signup"];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Only run on routes we care about
   const isProtected = PROTECTED_ROUTES.some((r) => pathname.startsWith(r));
   const isAuthRoute = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
+  // Skip Supabase entirely for routes we don't care about
   if (!isProtected && !isAuthRoute) {
     return NextResponse.next();
   }
 
-  const supabaseResponse = createClient(request);
+  // Build a mutable response so Supabase can write refreshed session cookies
+  let response = NextResponse.next({
+    request: { headers: request.headers },
+  });
 
-  // We need a fresh client to check session — reuse the response from createClient
-  const { createServerClient } = await import("@supabase/ssr");
+  // Single client — handles both getUser() and setAll() in one pass
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
@@ -27,28 +29,40 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll() {},
+        setAll(cookiesToSet) {
+          // Write cookies onto the request for downstream reads
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          // Rebuild the response so refreshed cookies reach the browser
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            response.cookies.set(name, value, options)
+          );
+        },
       },
     }
   );
 
+  // getUser() validates the JWT server-side and refreshes the session if needed
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users away from protected routes
+  // Unauthenticated user hitting a protected route → send to login
   if (isProtected && !user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from auth pages
+  // Authenticated user hitting an auth page → send to dashboard
   if (isAuthRoute && user) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  return supabaseResponse;
+  // Return the (possibly cookie-updated) response
+  return response;
 }
 
 export const config = {
